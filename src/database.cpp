@@ -137,9 +137,11 @@ namespace mini {
 			size_t pos = 0;  // payload 안에서 지금 읽는 위치
 			for (const auto& c : schema.columns) {
 				if (payload.size() - pos < 4) fail("Corrupt table: missing field length");
-				const auto size = readU32(payload.data() + pos); pos += 4;
+				const auto size = readU32(payload.data() + pos);
+				pos += 4;
 				if (size > payload.size() - pos) fail("Corrupt table: truncated field");
-				const auto text = payload.substr(pos, size); pos += size;
+				const auto text = payload.substr(pos, size);
+				pos += size;
 				if (c.type == Type::Text) row.emplace_back(text);
 				else {
 					// INT 컬럼: "25" → 25. 숫자가 아니거나 범위를 넘으면 손상으로 본다
@@ -156,12 +158,12 @@ namespace mini {
 		// 실행 전에 타입이 같음을 검증했으므로 정수는 수치로(10 > 9), 문자열은 바이트 순서로 비교된다
 		bool compare(const Value& a, Compare op, const Value& b) {
 			switch (op) {
-			case Compare::Equal: return a == b;
-			case Compare::NotEqual: return a != b;
-			case Compare::Less: return a < b;
-			case Compare::LessEqual: return a <= b;
-			case Compare::Greater: return a > b;
-			case Compare::GreaterEqual: return a >= b;
+				case Compare::Equal: return a == b;
+				case Compare::NotEqual: return a != b;
+				case Compare::Less: return a < b;
+				case Compare::LessEqual: return a <= b;
+				case Compare::Greater: return a > b;
+				case Compare::GreaterEqual: return a >= b;
 			}
 			fail("Invalid comparison operator");
 		}
@@ -229,7 +231,10 @@ namespace mini {
 		ofstream out(path, ios::binary | ios::app);
 		if (!out) fail("Cannot write table: " + path.string());
 		// 새 파일이면 매직 헤더와 스키마 서명 프레임부터 쓴다
-		if (!exists) { out.write(magic.data(), static_cast<streamsize>(magic.size())); writeFrame(out, expected); }
+		if (!exists) {
+			out.write(magic.data(), static_cast<streamsize>(magic.size()));
+			writeFrame(out, expected);
+		}
 		for (const auto& row : encoded) writeFrame(out, row);  // ④ 행 프레임들
 		// ⑤ 디스크 꽉 참 같은 쓰기 실패를 놓치지 않도록 flush/close 후 상태를 확인
 		out.flush();
@@ -266,7 +271,8 @@ namespace mini {
 			vector<size_t> mapping;
 			if (insert->columns.empty()) {
 				// 컬럼 목록 생략 → [0, 1, 2, ...] (스키마 순서 그대로)
-				mapping.resize(schema.columns.size()); iota(mapping.begin(), mapping.end(), 0);
+				mapping.resize(schema.columns.size()); 
+				iota(mapping.begin(), mapping.end(), 0);
 			}
 			else {
 				set<string> seen;
@@ -284,12 +290,15 @@ namespace mini {
 				Row row(schema.columns.size());  // 스키마 크기의 빈 행
 				for (size_t i = 0; i < values.size(); ++i) {
 					// 타입을 확인한 뒤, 스키마 위치에 값을 꽂는다 → 저장은 항상 스키마 순서
-					validateValue(schema.columns[mapping[i]], values[i]); row[mapping[i]] = values[i];
+					validateValue(schema.columns[mapping[i]], values[i]); 
+					row[mapping[i]] = values[i];
 				}
 				rows.push_back(std::move(row));
 			}
 			store_.append(schema, rows);  // 전부 검증된 행들만 저장소로
-			Result result; result.inserted = rows.size(); return result;
+			Result result; 
+			result.inserted = rows.size(); 
+			return result;
 		}
 		// ---------- SELECT ----------
 		// 여기 왔으면 Select다. get<Select>로 꺼낸다
@@ -302,16 +311,21 @@ namespace mini {
 		if (select.columns.empty()) {
 			// SELECT * → 모든 컬럼
 			for (size_t i = 0; i < schema.columns.size(); ++i) {
-				projection.push_back(i); result.columns.push_back(schema.columns[i].name);
+				projection.push_back(i); 
+				result.columns.push_back(schema.columns[i].name);
 			}
 		}
 		else {
-			for (const auto& name : select.columns) { projection.push_back(columnIndex(schema, name)); result.columns.push_back(name); }
+			for (const auto& name : select.columns) { 
+				projection.push_back(columnIndex(schema, name));
+				result.columns.push_back(name);
+			}
 		}
 		for (const auto& condition : select.conditions) {
 			const auto index = columnIndex(schema, condition.column);
 			// WHERE age = 'abc' 같은 타입 오류는 데이터를 읽기 전에 막는다
-			validateValue(schema.columns[index], condition.value); conditions.push_back(index);
+			validateValue(schema.columns[index], condition.value);
+			conditions.push_back(index);
 		}
 		// 람다 [&]: 바깥 변수(result, conditions, projection …)를 참조로 쓰는 콜백. scan이 행마다 호출한다
 		store_.scan(schema, [&](const Row& row) {

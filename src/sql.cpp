@@ -16,7 +16,11 @@ namespace mini {
 		// 토큰 종류 5가지: 단어(키워드·이름), 숫자, 문자열, 기호, 입력 끝
 		enum class Kind { Word, Number, String, Symbol, End };
 		// 토큰 = 종류 + 글자 + 위치(줄, 열). 위치는 "SQL 2:8: ..." 같은 오류 메시지용
-		struct Token { Kind kind; string text; size_t line, column; };
+		struct Token { 
+			Kind kind; 
+			string text; 
+			size_t line, column; 
+		};
 		// 글자 분류 함수들 (로케일 영향 없이 ASCII 기준으로 직접 비교)
 		bool alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
 		bool digit(char c) { return c >= '0' && c <= '9'; }
@@ -56,9 +60,15 @@ namespace mini {
 					while (true) {
 						if (pos_ == input_.size()) fail(token, "unterminated string");  // 닫는 ' 없이 입력이 끝남
 						c = take();
-						if (c != '\'') { token.text += c; continue; }  // 일반 글자는 그대로 저장 (; -- /* 도 그냥 글자)
+						if (c != '\'') {	// 일반 글자는 그대로 저장 (; -- /* 도 그냥 글자)
+							token.text += c;
+							continue; 
+						}
 						// ' 를 만났다: 바로 뒤도 ' 이면 '' → 글자 ' 하나, 아니면 문자열 끝
-						if (peek() == '\'') { take(); token.text += '\''; }
+						if (peek() == '\'') { 
+							take(); 
+							token.text += '\''; 
+						}
 						else break;
 					}
 				}
@@ -66,7 +76,7 @@ namespace mini {
 					// [Symbol] 나머지는 기호. 허용 목록 9개에 없으면 오류
 					token.kind = Kind::Symbol;
 					token.text += take();
-					if (string_view("(),;*=<>!").find(c) == string_view::npos)
+					if (string_view("(),;*=<>!").find(c) == string_view::npos) 
 						fail(token, "unexpected character");
 					// 두 글자 연산자 묶기: <= >= != <>  (Parser는 정확히 일치하는지만 보면 된다)
 					if ((c == '<' || c == '>' || c == '!') && peek() == '=') token.text += take();
@@ -85,7 +95,10 @@ namespace mini {
 			// take: 글자 하나를 "소비"하고 위치(줄/열)를 갱신한다
 			char take() {
 				const char c = input_[pos_++];
-				if (c == '\n') { ++line_; column_ = 1; }
+				if (c == '\n') { 
+					++line_; 
+					column_ = 1; 
+				}
 				else ++column_;
 				return c;
 			}
@@ -100,12 +113,15 @@ namespace mini {
 					}
 					if (peek() == '/' && peek(1) == '*') {
 						const Token start{ Kind::Symbol, "", line_, column_ };  // 닫히지 않았을 때 오류 위치로 쓰려고 시작점 기억
-						take(); take();
+						take(); 
+						take();
 						while (!(peek() == '*' && peek(1) == '/')) {
 							if (pos_ == input_.size()) fail(start, "unterminated comment");
 							take();
 						}
-						take(); take(); continue;  // 닫는 */ 소비
+						take(); 
+						take();
+						continue;  // 닫는 */ 소비
 					}
 					break;  // 공백도 주석도 아니면 멈춤 → 여기서 토큰이 시작된다
 				}
@@ -137,7 +153,8 @@ namespace mini {
 			// Word와 Symbol만 비교하므로 문자열 'select'는 키워드로 오인되지 않는다
 			bool accept(const string& text) {
 				if ((token_.kind != Kind::Word && token_.kind != Kind::Symbol) || token_.text != text) return false;
-				token_ = lexer_.next(); return true;
+				token_ = lexer_.next();
+				return true;
 			}
 			// expect: 반드시 text 여야 한다. 아니면 "expected 'text'" 오류
 			void expect(const string& text) {
@@ -146,12 +163,16 @@ namespace mini {
 			// identifier: Word 토큰 하나를 이름으로 꺼낸다 (테이블명, 컬럼명)
 			string identifier() {
 				if (token_.kind != Kind::Word) Lexer::fail(token_, "expected identifier");
-				auto name = token_.text; token_ = lexer_.next(); return name;
+				auto name = token_.text; 
+				token_ = lexer_.next(); 
+				return name;
 			}
 			// value: 리터럴 하나 → Value (문자열이면 그대로, 숫자면 int64로)
 			Value value() {
 				if (token_.kind == Kind::String) {
-					auto text = token_.text; token_ = lexer_.next(); return text;
+					auto text = token_.text; 
+					token_ = lexer_.next(); 
+					return text;
 				}
 				if (token_.kind != Kind::Number) Lexer::fail(token_, "expected integer or single-quoted string");
 				auto text = string_view(token_.text);
@@ -159,9 +180,10 @@ namespace mini {
 				int64_t number = 0;
 				// 문자열 → int64. 범위를 넘거나(오버플로) 끝까지 소비하지 못하면 실패
 				const auto result = from_chars(text.data(), text.data() + text.size(), number);
-				if (result.ec != errc{} || result.ptr != text.data() + text.size())
+				if (result.ec != errc{} || result.ptr != text.data() + text.size())	
 					Lexer::fail(token_, "integer outside signed 64-bit range");
-				token_ = lexer_.next(); return number;
+				token_ = lexer_.next();
+				return number;
 			}
 			// INSERT INTO 테이블 [(컬럼, ...)] VALUES (값, ...) [, (값, ...)]
 			// ("insert" 키워드는 script()에서 이미 소비됨)

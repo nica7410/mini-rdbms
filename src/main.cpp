@@ -39,7 +39,10 @@ int main(int argc, char** argv) {
 		// argv[1]부터 하나씩 본다. 옵션은 "이름 값" 두 칸씩
 		for (int i = 1; i < argc; ++i) {
 			const string arg = argv[i];
-			if (arg == "--help" || arg == "-h") { usage(); return 0; }
+			if (arg == "--help" || arg == "-h") { 
+				usage(); 
+				return 0; 
+			}
 			// 4개 옵션이 아니면 바로 오류
 			if (arg != "--schema-dir" && arg != "--data-dir" && arg != "--file" && arg != "--execute")
 				throw runtime_error("Unknown option: " + arg);
@@ -50,8 +53,10 @@ int main(int argc, char** argv) {
 			else {
 				// --file 과 --execute 는 둘 중 하나만, 한 번만 쓸 수 있다
 				if (hasInput) throw runtime_error("Use only one --file or --execute option");
-				hasInput = true; fromFile = arg == "--file";
-				if (fromFile) file = argv[i]; else sql = argv[i];
+				hasInput = true; 
+				fromFile = arg == "--file";
+				if (fromFile) file = argv[i]; 
+				else sql = argv[i];
 			}
 		}
 		// ===== 2. SQL 문자열 확보 =====

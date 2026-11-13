@@ -1,0 +1,12 @@
+INSERT 3
+id,name,age
+1,김정글,25
+2,O'Brien,31
+3,"Alice, developer",22
+name,age
+김정글,25
+id,name
+2,O'Brien
+INSERT 1
+name,price
+키보드,120000

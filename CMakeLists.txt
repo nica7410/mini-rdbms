@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.16)
+project(mini_rdbms VERSION 1.0 LANGUAGES CXX)
+
+add_library(rdbms src/sql.cpp src/database.cpp)
+target_include_directories(rdbms PUBLIC include)
+target_compile_features(rdbms PUBLIC cxx_std_17)
+set_target_properties(rdbms PROPERTIES CXX_EXTENSIONS OFF)
+if(MSVC)
+  target_compile_options(rdbms PUBLIC /W4 /utf-8 /permissive-)
+else()
+  target_compile_options(rdbms PUBLIC -Wall -Wextra -Wpedantic)
+endif()
+if(MINGW)
+  target_link_options(rdbms INTERFACE -static)
+endif()
+
+add_executable(mini-rdbms src/main.cpp)
+target_link_libraries(mini-rdbms PRIVATE rdbms)
+
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(rdbms-tests tests/tests.cpp)
+  target_link_libraries(rdbms-tests PRIVATE rdbms)
+  add_test(NAME unit-and-engine COMMAND rdbms-tests)
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  add_test(NAME cli-persistence COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli.py $<TARGET_FILE:mini-rdbms>)
+endif()

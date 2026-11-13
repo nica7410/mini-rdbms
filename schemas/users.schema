@@ -1,0 +1,4 @@
+# Predefined table: users. All columns are required.
+id INT
+name TEXT
+age INT
